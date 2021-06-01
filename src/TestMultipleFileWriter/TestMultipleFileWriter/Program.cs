@@ -75,17 +75,18 @@ namespace TestMultipleFileWriter
         static async Task CreateDummyHugeFile()
         {
             //Ranges list populated here
-            using MemoryMappedFile fileMapper = MemoryMappedFile.CreateFromFile(path, FileMode.OpenOrCreate, "testMap",
+            MemoryMappedFile fileMapper = MemoryMappedFile.CreateFromFile(path, FileMode.OpenOrCreate, "testMap",
                 NumberOfStreams * ChunkLength, MemoryMappedFileAccess.ReadWrite);
 
             var tasks = new Task[NumberOfStreams];
-            for (int i = 0; i < NumberOfStreams; i++)
+            for (var i = 0; i < NumberOfStreams; i++)
             {
                 var index = i;
                 var fileStream = fileMapper.CreateViewStream(Ranges[index].Start, ChunkLength, MemoryMappedFileAccess.Write);
                 tasks[i] = Task.Factory.StartNew(() => DoWriting(fileStream, index));
             }
 
+            fileMapper.Dispose(); // Note: I can to dispose mapper before start view streams
             await Task.WhenAll(tasks);
         }
 
@@ -112,17 +113,5 @@ namespace TestMultipleFileWriter
                 fileStream?.Dispose();
             }
         }
-    }
-
-    public struct Range
-    {
-        public Range(long start, long end)
-        {
-            Start = start;
-            End = end;
-        }
-
-        public long Start { get; set; }
-        public long End { get; set; }
     }
 }
