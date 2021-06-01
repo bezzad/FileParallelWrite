@@ -13,7 +13,7 @@ namespace TestMultipleFileWriter
         private const string MapperName = "TestMapper";
 
         private const int NumberOfStreams = 8;
-        private const long TotalLength = 4 * 1024L * 1024 * 1024; // 4GB
+        private const long TotalLength = 1024L * 1024 * 1024; // 1GB
         private const long ChunkLength = TotalLength / NumberOfStreams;
         private static List<Range> Ranges = new List<Range>();
 
@@ -48,11 +48,12 @@ namespace TestMultipleFileWriter
         {
             Console.Write($"{title} File ({TotalLength} bytes)");
 
-            var sw = Stopwatch.StartNew();
+            var startTicks = DateTime.Now.Ticks;
             var result = await act;
-            sw.Stop();
+            var elapsedTicks = DateTime.Now.Ticks - startTicks;
+            var elapsedSpan = new TimeSpan(elapsedTicks);
 
-            Console.Write($" took {sw.ElapsedMilliseconds} milliseconds ");
+            Console.Write($" took {elapsedSpan.TotalMilliseconds}ms ");
 
             if (result)
             {
@@ -100,7 +101,7 @@ namespace TestMultipleFileWriter
         static async Task<bool> CreateDummyHugeFile(bool isReversed)
         {
             //Ranges list populated here
-            var fileMapper = MemoryMappedFile.CreateFromFile(path, FileMode.OpenOrCreate, MapperName,
+            using var fileMapper = MemoryMappedFile.CreateFromFile(path, FileMode.OpenOrCreate, MapperName,
                 NumberOfStreams * ChunkLength, MemoryMappedFileAccess.ReadWrite);
 
             var tasks = new Task[NumberOfStreams];
@@ -112,9 +113,7 @@ namespace TestMultipleFileWriter
                 tasks[i] = DoWriting(fileStream, data);
             }
 
-            fileMapper.Dispose(); // Note: I can to dispose mapper before start view streams
             await Task.WhenAll(tasks);
-
             return true;
         }
 
