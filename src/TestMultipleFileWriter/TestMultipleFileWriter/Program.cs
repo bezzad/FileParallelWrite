@@ -12,8 +12,8 @@ namespace TestMultipleFileWriter
         private const string path = @"c:\temp\test.bin";
         private const string MapperName = "TestMapper";
 
-        private const int NumberOfStreams = 4;
-        private const long TotalLength = 6 * 1024L * 1024 * 1024; // 6GB
+        private const int NumberOfStreams = 8;
+        private const long TotalLength = 4 * 1024L * 1024 * 1024; // 4GB
         private const long ChunkLength = TotalLength / NumberOfStreams;
         private static List<Range> Ranges = new List<Range>();
 
@@ -21,6 +21,8 @@ namespace TestMultipleFileWriter
         {
             try
             {
+                Console.WriteLine("Test MemoryMappedFile Performance \n\n");
+
                 SetRanges();
 
                 await WriteConsole("Writing", CreateDummyHugeFile(false));
@@ -45,7 +47,6 @@ namespace TestMultipleFileWriter
         private static async Task WriteConsole(string title, Task<bool> act)
         {
             Console.Write($"{title} File ({TotalLength} bytes)");
-            await Task.Delay(100);
 
             var sw = Stopwatch.StartNew();
             var result = await act;
@@ -63,7 +64,6 @@ namespace TestMultipleFileWriter
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Failed");
             }
-
             Console.ResetColor();
         }
         private static async Task<bool> TestDummyHugeFile(bool isReversed)
