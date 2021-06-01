@@ -82,37 +82,35 @@ namespace TestMultipleFileWriter
             for (int i = 0; i < NumberOfStreams; i++)
             {
                 var index = i;
-                tasks[i] = Task.Factory.StartNew(() => DoWriting(fileMapper, index));
+                var fileStream = fileMapper.CreateViewStream(Ranges[index].Start, ChunkLength, MemoryMappedFileAccess.Write);
+                tasks[i] = Task.Factory.StartNew(() => DoWriting(fileStream, index));
             }
 
             await Task.WhenAll(tasks);
         }
 
-        static void DoWriting(MemoryMappedFile fileMapper, int index)
+        static void DoWriting(Stream fileStream, int index, int bufferSize = 1024)
         {
             try
             {
-                using var fileStream =
-                    fileMapper.CreateViewStream(Ranges[index].Start,
-                        ChunkLength, MemoryMappedFileAccess.Write);
-
                 var counter = 0L;
+                var buffer = new byte[bufferSize];
+
                 while (counter < ChunkLength)
                 {
-                    counter += Write(fileStream, 1024, (byte)index);
+                    Array.Fill(buffer, (byte)index);
+                    fileStream.Write(buffer);
+                    counter += buffer.Length;
                 }
             }
             catch (Exception e)
             {
                 Console.Error.WriteLine(e);
             }
-        }
-        static int Write(Stream stream, int bufferLength, byte fixedData)
-        {
-            var buffer = new byte[bufferLength];
-            Array.Fill(buffer, fixedData);
-            stream.Write(buffer);
-            return bufferLength;
+            finally
+            {
+                fileStream?.Dispose();
+            }
         }
     }
 
